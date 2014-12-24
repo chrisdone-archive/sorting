@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+
 -- | In-place quicksort.
 
 module QuickSort (quickSort) where
@@ -25,7 +27,16 @@ quickSort vec =
   where qsort array begin end =
           when (end > begin)
                (do let startP = begin + ((end - begin) `div` 2)
+                   -- ^ I chose to simply choose the pivot as the
+                   -- median, no cleverness or randomness here. AIUI
+                   -- Sedgewick recommends this.
                    pivot <- partition array begin end startP
+                   -- The condition below is recommended by Sedgewick:
+                   --
+                   -- To make sure at most O(log n) space is used,
+                   -- recurse first into the smaller side of the
+                   -- partition, then use a tail call to recurse into
+                   -- the other.
                    if pivot - begin > end - pivot + 1
                       then do qsort array (pivot + 1) end
                               qsort array begin pivot
@@ -38,16 +49,21 @@ partition :: (PrimMonad m,Ord a) => V.MVector (PrimState m) a -> Int -> Int -> I
 partition array begin end pivot =
   do piv <- V.read array pivot
      V.swap array pivot (end - 1)
-     store <- foldM (\store ix ->
-                       do v <- V.read array ix
-                          if v <= piv
-                             then do V.swap array store ix
-                                     return (store + 1)
-                             else return store)
-                    begin
-                    [begin .. end - 2]
+     store <- for begin (end - 1) begin
+                  (\ix !store ->
+                     do v <- V.read array ix
+                        if v <= piv
+                           then do V.swap array store ix
+                                   return (store + 1)
+                           else return store)
      V.swap array (end - 1) store
      return store
+  where for from to state m = go from state
+          where go i state =
+                  if i < to
+                     then do state' <- m i state
+                             go (i + 1) state'
+                     else return state
 
 --------------------------------------------------------------------------------
 -- Tests
@@ -63,6 +79,7 @@ quickSortProp xs =
 --------------------------------------------------------------------------------
 -- Example
 
+-- | Works in either the IO or ST monad!
 main :: IO ()
 main =
   do quickCheck quickSortProp
