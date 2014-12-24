@@ -1,0 +1,24 @@
+name:                sorting
+version:             0.0.0
+synopsis:            Sorting algorithms
+description:         Sorting algorithms
+license:             BSD3
+license-file:        LICENSE
+author:              Chris Done
+maintainer:          chrisdone@gmail.com
+copyright:           2014 Chris Done
+category:            Algorithms
+build-type:          Simple
+cabal-version:       >=1.8
+
+library
+  hs-source-dirs:    src/
+  ghc-options:       -Wall -O2
+  exposed-modules:   Quicksort
+  build-depends:     base >= 4 && <5
+
+executable sorting
+  hs-source-dirs:    src/
+  ghc-options:       -Wall -O2
+  main-is:           Main.hs
+  build-depends:     base >= 4 && < 5
